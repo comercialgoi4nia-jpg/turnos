@@ -3,31 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Turnos</title>
+<title>Painel de Turnos</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <style>
   :root {
-    --brand: #2E4057;
-    --brand-light: #3d5470;
-    --accent: #1D9E75;
-    --accent-light: #E1F5EE;
-    --danger: #E24B4A;
-    --danger-light: #FCEBEB;
-    --warning: #EF9F27;
-    --warning-light: #FAEEDA;
-    --success: #639922;
-    --success-light: #EAF3DE;
-    --gray-50: #F8F9FA;
-    --gray-100: #F1EFE8;
-    --gray-200: #D3D1C7;
-    --gray-400: #888780;
-    --gray-600: #5F5E5A;
-    --gray-800: #444441;
-    --radius: 10px;
-    --radius-sm: 6px;
+    --brand:          #1a6b47;
+    --brand-dark:     #155939;
+    --brand-light:    #e0f2e9;
+    --accent-blue:    #185fa5;
+    --accent-blue-bg: #e3edf8;
+    --accent-amber:   #854f0b;
+    --accent-amber-bg:#fdf3dc;
+    --accent-purple:  #6b31a8;
+    --accent-purple-bg:#f5e8fb;
+    --color-background-primary:   #ffffff;
+    --color-background-secondary: #f6f7f9;
+    --color-background-tertiary:  #eef0f3;
+    --color-text-primary:   #1c1c1e;
+    --color-text-secondary: #5a5a62;
+    --color-text-tertiary:  #9696a0;
+    --color-border-tertiary:#e4e4e8;
+    --color-border-secondary:#d0d0d6;
+    --border-radius-lg: 12px;
+    --border-radius-md: 8px;
+    --danger:      #d93025;
+    --danger-bg:   #fce8e7;
+    --success:     #1a6b47;
+    --success-bg:  #e0f2e9;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,14 +41,15 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
-    background: #f0f2f5;
-    color: #2c2c2a;
+    background: var(--color-background-tertiary);
+    color: var(--color-text-primary);
     height: 100vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
 
+  /* ── AUTH ── */
   #auth-screen {
     display: flex;
     align-items: center;
@@ -52,18 +59,18 @@
   }
 
   .auth-card {
-    background: white;
-    border-radius: 16px;
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
     padding: 2.5rem;
     width: 360px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.22);
   }
 
   .auth-logo {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
   }
 
   .auth-logo-icon {
@@ -74,31 +81,35 @@
     color: white; font-size: 18px;
   }
 
-  .auth-logo h1 { font-size: 18px; font-weight: 600; color: var(--brand); }
-  .auth-logo span { font-size: 12px; color: var(--gray-400); display: block; }
+  .auth-logo h1 { font-size: 17px; font-weight: 600; color: var(--color-text-primary); }
+  .auth-logo span { font-size: 12px; color: var(--color-text-tertiary); display: block; }
 
   .auth-card label {
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: var(--gray-600);
+    color: var(--color-text-secondary);
     margin-bottom: 4px;
-    margin-top: 12px;
+    margin-top: 14px;
   }
 
   .auth-card input {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid var(--gray-200);
-    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: 8px;
     font-size: 14px;
     outline: none;
+    color: var(--color-text-primary);
+    transition: border-color .15s;
   }
 
+  .auth-card input:focus { border-color: var(--brand); }
+
   #auth-error {
-    background: var(--danger-light);
+    background: var(--danger-bg);
     color: var(--danger);
-    border-radius: var(--radius-sm);
+    border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
     margin-top: 10px;
@@ -111,213 +122,471 @@
     background: var(--brand);
     color: white;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    margin-top: 16px;
+    margin-top: 18px;
+    transition: background .15s;
   }
 
+  .btn-primary:hover { background: var(--brand-dark); }
+
+  /* ── APP SHELL ── */
   #app { display: none; flex-direction: column; height: 100vh; }
 
   .topbar {
     background: var(--brand);
     color: white;
     padding: 0 20px;
-    height: 52px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
   }
 
-  .topbar-left { display: flex; align-items: center; gap: 12px; }
-  .topbar-left .logo-icon {
-    width: 30px; height: 30px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 7px;
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+
+  .topbar-logo {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,.15);
+    border-radius: 6px;
     display: flex; align-items: center; justify-content: center;
     font-size: 15px;
   }
-  .topbar-left h1 { font-size: 15px; font-weight: 500; }
 
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .user-badge { font-size: 12px; opacity: 0.75; }
-  .btn-logout {
-    background: rgba(255,255,255,0.15);
-    color: white;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 5px 10px;
+  .topbar h1 { font-size: 14px; font-weight: 500; letter-spacing: -.01em; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  .user-pill {
+    background: rgba(255,255,255,.12);
+    border-radius: 20px;
+    padding: 3px 10px;
     font-size: 12px;
-    cursor: pointer;
+    opacity: .85;
   }
 
-  .nav-tabs {
+  .btn-logout {
+    background: rgba(255,255,255,.12);
+    color: white;
+    border: 0.5px solid rgba(255,255,255,.2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,.22); }
+
+  /* ── NAV ── */
+  .nav {
     display: flex;
-    background: white;
-    border-bottom: 1px solid var(--gray-200);
+    background: var(--color-background-primary);
+    border-bottom: 0.5px solid var(--color-border-tertiary);
     padding: 0 20px;
     flex-shrink: 0;
   }
 
-  .nav-tab {
-    padding: 12px 16px;
+  .nav-item {
+    padding: 10px 14px;
     font-size: 13px;
-    font-weight: 500;
-    color: var(--gray-600);
+    color: var(--color-text-secondary);
     cursor: pointer;
     border-bottom: 2px solid transparent;
     display: flex;
     align-items: center;
     gap: 6px;
+    transition: color .15s;
+    white-space: nowrap;
   }
-  .nav-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
-  .nav-tab.section-hidden { display: none !important; }
 
-  .content { flex: 1; overflow-y: auto; padding: 20px; }
+  .nav-item.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 500; }
+  .nav-item:hover:not(.active) { color: var(--color-text-primary); }
+  .nav-item.section-hidden { display: none !important; }
 
-  .panel {
-    background: white;
-    border-radius: var(--radius);
-    border: 1px solid var(--gray-200);
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 20px; background: var(--color-background-secondary); }
+
+  .card {
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
     padding: 16px 20px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
-  .panel-title { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 12px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: .02em; text-transform: uppercase; }
 
-  .metrics-grid {
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 1.5px dashed var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 28px;
+    text-align: center;
+    background: var(--color-background-secondary);
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+
+  .upload-zone:hover { border-color: var(--brand); }
+  .upload-zone input[type=file] { display: none; }
+
+  .upload-icon {
+    width: 40px; height: 40px;
+    background: var(--brand-light);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 20px;
+    color: var(--brand);
+  }
+
+  .upload-zone strong { font-size: 13px; color: var(--color-text-primary); }
+  .upload-zone p { font-size: 12px; color: var(--color-text-secondary); margin-top: 5px; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filters select {
+    padding: 6px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    font-size: 12px;
+    color: var(--color-text-primary);
+    outline: none;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead th {
+    background: var(--brand);
+    color: white;
+    padding: 9px 14px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child  { border-radius: 0 8px 0 0; }
+
+  tbody tr { border-bottom: 0.5px solid var(--color-border-tertiary); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--color-background-secondary); }
+  tbody td { padding: 9px 14px; color: var(--color-text-primary); }
+
+  /* ── BADGES ── */
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .badge-green  { background: var(--brand-light); color: var(--brand); }
+  .badge-blue   { background: var(--accent-blue-bg); color: var(--accent-blue); }
+  .badge-amber  { background: var(--accent-amber-bg); color: var(--accent-amber); }
+  .badge-purple { background: var(--accent-purple-bg); color: var(--accent-purple); }
+
+  .prefixo-tag {
+    background: var(--brand-light);
+    color: var(--brand);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-save {
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+  }
+
+  .btn-save:hover { background: var(--brand-dark); }
+  .btn-save:disabled { opacity: .55; cursor: default; }
+
+  .btn-edit {
+    background: transparent;
+    color: var(--brand);
+    border: 0.5px solid var(--brand);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background .15s;
+  }
+
+  .btn-edit:hover { background: var(--brand-light); }
+
+  /* ── STATS ── */
+  .stat-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
-  .metric-card {
-    background: white;
-    border: 1px solid var(--gray-200);
-    border-radius: var(--radius);
+  .stat-card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
     padding: 14px 16px;
   }
 
-  .metric-label { font-size: 11px; font-weight: 500; color: var(--gray-400); text-transform: uppercase; }
-  .metric-value { font-size: 24px; font-weight: 600; color: var(--brand); }
+  .stat-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
 
-  .upload-zone {
-    border: 2px dashed var(--gray-200);
-    border-radius: var(--radius);
-    padding: 32px;
-    text-align: center;
-    cursor: pointer;
-    background: var(--gray-50);
-    margin-bottom: 16px;
+  /* ── TEAM ROWS ── */
+  .team-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .team-row:last-child { border-bottom: none; }
+
+  .team-dot {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600;
+    flex-shrink: 0;
   }
 
-  .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--gray-200); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th { background: var(--brand); color: white; padding: 10px 14px; text-align: left; font-weight: 500; }
-  tbody tr { border-bottom: 1px solid var(--gray-100); }
-  tbody td { padding: 9px 14px; color: var(--gray-800); }
-  
-  .badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-  .badge-success { background: var(--success-light); color: #3B6D11; }
+  .dot-a { background: var(--brand-light); color: var(--brand); }
+  .dot-b { background: var(--accent-blue-bg); color: var(--accent-blue); }
+  .dot-c { background: var(--accent-amber-bg); color: var(--accent-amber); }
+  .dot-d { background: var(--accent-purple-bg); color: var(--accent-purple); }
 
-  .actions-bar { display: flex; gap: 8px; margin-top: 12px; }
-  .btn { padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; }
-  .btn-save { background: var(--brand); color: white; }
-  .btn-edit { background: white; color: var(--brand); border-color: var(--gray-200); padding: 5px 10px; font-size: 12px; }
+  .team-name { flex: 1; }
+  .team-name strong { display: block; font-size: 13px; font-weight: 500; }
+  .team-name span { font-size: 11px; color: var(--color-text-tertiary); }
 
-  .filters { display: flex; gap: 10px; margin-bottom: 14px; }
-  .filters select { padding: 7px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); background: white; }
-
-  #toast {
-    position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: var(--radius-sm);
-    font-size: 13px; color: white; background: var(--brand); opacity: 0; transition: opacity 0.25s; z-index: 999;
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
   }
-  #toast.show { opacity: 1; }
-  #toast.success { background: var(--success); }
-  #toast.error { background: var(--danger); }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 12px; padding: 20px 24px; width: 100%; max-width: 480px; }
+
+  .modal {
+    background: var(--color-background-primary);
+    border-radius: var(--border-radius-lg);
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+
+  .modal-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--color-text-primary); }
+
   .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label { font-size: 12px; font-weight: 500; }
-  .form-group input { padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+  .form-group input, .form-group textarea {
+    padding: 8px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    color: var(--color-text-primary);
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--brand); }
 
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+  .btn-cancel {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: white;
+    background: var(--brand);
+    opacity: 0;
+    transition: opacity .25s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--danger); }
+
+  /* ── MISC ── */
   .section-hidden { display: none !important; }
-  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+  }
+
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+  }
+
+  .actions-bar { display: flex; gap: 8px; margin-top: 14px; }
 </style>
 </head>
 <body>
 
+<!-- ══ AUTH SCREEN ══════════════════════════════════════════════════════════ -->
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="auth-logo-icon">🔧</div>
-      <div><h1>Controle de Turnos</h1><span>Painel do Usuário</span></div>
+      <div class="auth-logo-icon">
+        <i class="ti ti-table" style="font-size:18px"></i>
+      </div>
+      <div>
+        <h1>Painel de Turnos</h1>
+        <span>Acesso restrito</span>
+      </div>
     </div>
     <label for="login-email">E-mail</label>
-    <input type="email" id="login-email" placeholder="usuario@empresa.com">
+    <input type="email" id="login-email" placeholder="usuario@empresa.com" onkeydown="if(event.key==='Enter')doLogin()">
     <label for="login-pass">Senha</label>
-    <input type="password" id="login-pass" placeholder="••••••••">
+    <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     <div id="auth-error"></div>
     <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar</button>
   </div>
 </div>
 
+<!-- ══ APP ══════════════════════════════════════════════════════════════════ -->
 <div id="app">
+
+  <!-- Topbar -->
   <div class="topbar">
-    <div class="topbar-left"><div class="logo-icon">🔧</div><h1>Controle de Turnos</h1></div>
-    <div class="topbar-right"><span class="user-badge" id="user-email-display"></span><button class="btn-logout" onclick="doLogout()">Sair</button></div>
+    <div class="topbar-left">
+      <div class="topbar-logo"><i class="ti ti-table" style="font-size:15px"></i></div>
+      <h1>Painel de Turnos</h1>
+    </div>
+    <div class="topbar-right">
+      <span class="user-pill" id="user-email-display"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
   </div>
 
-  <div class="nav-tabs">
-    <div class="nav-tab" id="tab-btn-upload" data-tab="upload" onclick="switchTab('upload')">📋 <span>Turnos do Dia</span></div>
-    <div class="nav-tab" id="tab-btn-edicao" data-tab="edicao" onclick="switchTab('edicao')">✏️ <span>Editar Registros</span></div>
-    <div class="nav-tab" id="tab-btn-historico" data-tab="historico" onclick="switchTab('historico')">📈 <span>Histórico e Equipes</span></div>
-    <div class="nav-tab" id="tab-btn-config" data-tab="config" onclick="switchTab('config')">⚙️ <span>Configurações</span></div>
+  <!-- Nav -->
+  <div class="nav">
+    <div class="nav-item active" id="tab-btn-upload" onclick="switchTab('upload',this)">
+      <i class="ti ti-upload"></i> Importar Base
+    </div>
+    <div class="nav-item" id="tab-btn-edicao" onclick="switchTab('edicao',this)">
+      <i class="ti ti-edit"></i> Editar Turnos
+    </div>
+    <div class="nav-item" id="tab-btn-historico" onclick="switchTab('historico',this)">
+      <i class="ti ti-chart-bar"></i> Histórico e Equipes
+    </div>
+    <div class="nav-item" id="tab-btn-config" onclick="switchTab('config',this)">
+      <i class="ti ti-settings"></i> Configurações
+    </div>
   </div>
 
+  <!-- Content -->
   <div class="content">
-    <div id="tab-upload" class="section-hidden">
-      <div class="panel">
-        <div class="panel-title">📂 Importar arquivo do dia</div>
+
+    <!-- ── TAB: UPLOAD ── -->
+    <div id="tab-upload">
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Importar arquivo Excel</span></div>
         <div class="upload-zone" onclick="document.getElementById('file-input').click()">
           <input type="file" id="file-input" accept=".xml,.xlsx,.xls" onchange="handleFile(this.files[0])">
-          <div>📁 <strong>Clique ou arraste a planilha aqui</strong></div>
+          <div class="upload-icon"><i class="ti ti-file-spreadsheet"></i></div>
+          <strong>Clique para selecionar ou arraste o arquivo</strong>
+          <p>Formatos suportados: .xlsx, .xls, .xml</p>
         </div>
       </div>
+
       <div id="upload-results" style="display:none">
-        <div class="panel">
-          <div class="table-wrapper">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Registros filtrados</span>
+            <button class="btn-save" id="btn-save-firebase" onclick="salvarNaBase()">
+              <i class="ti ti-cloud-upload"></i> Salvar na nuvem
+            </button>
+          </div>
+          <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Prefixo</th><th>Data</th><th>Início Turno</th><th>Fim Intervalo</th><th>Tempo Calculado</th></tr>
+                <tr>
+                  <th>Prefixo</th>
+                  <th>Data</th>
+                  <th>Início</th>
+                  <th>Fim Intervalo</th>
+                  <th>Tempo</th>
+                </tr>
               </thead>
               <tbody id="turnos-tbody"></tbody>
             </table>
           </div>
-          <div class="actions-bar"><button class="btn btn-save" id="btn-save-firebase" onclick="salvarNoFirebase()">☁️ Salvar no Firebase</button></div>
         </div>
       </div>
     </div>
 
+    <!-- ── TAB: EDIÇÃO ── -->
     <div id="tab-edicao" class="section-hidden">
-      <div class="panel">
+      <div class="card">
         <div class="filters">
-          <select id="filter-data" onchange="carregarRegistros()"><option value="">Todas as datas</option></select>
-          <select id="filter-prefixo" onchange="carregarRegistros()"><option value="">Todos os prefixos</option></select>
+          <select id="filter-data" onchange="carregarRegistros()">
+            <option value="">Todas as datas</option>
+          </select>
+          <select id="filter-prefixo" onchange="carregarRegistros()">
+            <option value="">Todos os prefixos</option>
+          </select>
         </div>
       </div>
-      <div class="panel">
-        <div class="table-wrapper">
+      <div class="card">
+        <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Data</th><th>Prefixo</th><th>Início</th><th>Fim Intervalo</th><th>Tempo Calculado</th><th>Motivo</th><th>Ações</th></tr>
+              <tr>
+                <th>Data</th>
+                <th>Prefixo</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Tempo</th>
+                <th>Motivo</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody id="edicao-tbody"></tbody>
           </table>
@@ -325,89 +594,168 @@
       </div>
     </div>
 
+    <!-- ── TAB: HISTÓRICO ── -->
     <div id="tab-historico" class="section-hidden">
-      <div class="panel">
-        <div class="panel-title">🏆 Relatório de Médias e Hierarquia de Equipes</div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>Prefixo</th><th>Nome da Equipe (Hierarquia)</th><th>Quantidade de Turnos</th><th>Média de Intervalo</th></tr>
-            </thead>
-            <tbody id="hierarquia-tbody"></tbody>
-          </table>
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-label">Total de turnos</div><div class="stat-value" id="stat-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Média geral</div><div class="stat-value" id="stat-media">—</div></div>
+        <div class="stat-card"><div class="stat-label">Equipes ativas</div><div class="stat-value" id="stat-equipes">4</div></div>
+        <div class="stat-card"><div class="stat-label">Período</div><div class="stat-value" id="stat-periodo" style="font-size:15px">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Médias por equipe</span></div>
+        <div id="historico-equipes"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB: CONFIG ── -->
+    <div id="tab-config" class="section-hidden">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Configurações do sistema</span></div>
+        <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.6">
+          O painel opera em modo seguro. As credenciais do Firebase e da API do Google Sheets
+          são injetadas via variáveis de ambiente no Netlify — nenhuma chave é exposta no frontend.
+        </p>
+        <div style="margin-top:14px;padding:12px;background:var(--color-background-secondary);border-radius:8px;font-size:12px;color:var(--color-text-tertiary);">
+          <strong style="color:var(--color-text-secondary)">Backend ativo:</strong>
+          <span id="backend-label">Firebase Firestore</span>
         </div>
       </div>
     </div>
 
-    <div id="tab-config" class="section-hidden">
-      <div class="panel"><div class="panel-title">⚙️ Sistema operando em modo seguro</div><p>Variáveis injetadas em ambiente privado via Netlify.</p></div>
-    </div>
   </div>
 </div>
 
+<!-- ══ EDIT MODAL ═══════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
+    <div class="modal-title">Editar registro</div>
     <div class="form-grid">
-      <div class="form-group"><label>Início do Turno (HH:MM:SS)</label><input type="time" id="edit-inicio-turno" step="1"></div>
-      <div class="form-group"><label>Fim do Intervalo (HH:MM:SS)</label><input type="time" id="edit-fim-intervalo" step="1"></div>
-      <div class="form-group"><label>Motivo</label><input type="text" id="edit-motivo"></div>
+      <div class="form-group">
+        <label>Início do Turno</label>
+        <input type="time" id="edit-inicio-turno" step="1">
+      </div>
+      <div class="form-group">
+        <label>Fim do Intervalo</label>
+        <input type="time" id="edit-fim-intervalo" step="1">
+      </div>
+      <div class="form-group">
+        <label>Motivo (opcional)</label>
+        <input type="text" id="edit-motivo" placeholder="Ex: Atraso operacional">
+      </div>
     </div>
-    <div class="actions-bar" style="margin-top:15px"><button class="btn btn-save" onclick="salvarEdicao()">Salvar</button><button class="btn" onclick="fecharModal()">Cancelar</button></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-save" onclick="salvarEdicao()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
+<!-- ══ SCRIPT ════════════════════════════════════════════════════════════════ -->
 <script>
+// ─── Constantes ──────────────────────────────────────────────────────────────
 const PREFIXOS_ALVO = ["GOOC","GOOH","GOOL","GOOK"];
+
 const HIERARQUIA_EQUIPES = {
-  "GOOC": "Equipe Alfa - Operações Críticas",
-  "GOOH": "Equipe Beta - Suporte Corporativo",
-  "GOOL": "Equipe Gama - Logística de Turno",
-  "GOOK": "Equipe Delta - Auditoria e Qualidade"
+  "GOOC": "Equipe Alfa — Operações Críticas",
+  "GOOH": "Equipe Beta — Suporte Corporativo",
+  "GOOL": "Equipe Gama — Logística de Turno",
+  "GOOK": "Equipe Delta — Auditoria e Qualidade"
 };
 
-let db = null, auth = null, currentEditId = null, dadosDoDia = [];
+const TEAM_COLORS = {
+  "GOOC": { dot: "dot-a", badge: "badge-green" },
+  "GOOH": { dot: "dot-b", badge: "badge-blue" },
+  "GOOL": { dot: "dot-c", badge: "badge-amber" },
+  "GOOK": { dot: "dot-d", badge: "badge-purple" },
+};
 
-function converterParaMinutos(horario) {
-  if (!horario || typeof horario !== 'string') return 0;
-  const partes = horario.split(':');
-  return (parseInt(partes[0], 10) || 0) * 60 + (parseInt(partes[1], 10) || 0);
+// ─── Estado ──────────────────────────────────────────────────────────────────
+let db = null, auth = null;
+let currentEditId = null, currentEditIndex = null;
+let dadosDoDia = [];
+let useSheets = false; // true = backend Google Sheets via Netlify function
+
+// ─── Utilitários de tempo ─────────────────────────────────────────────────────
+function converterParaMinutos(h) {
+  if (!h || typeof h !== 'string') return 0;
+  const p = h.split(':');
+  return (parseInt(p[0],10)||0)*60 + (parseInt(p[1],10)||0);
 }
 
-function formatarMinutosParaHHMM(minutosTotais) {
-  if (isNaN(minutosTotais) || minutosTotais <= 0) return "—";
-  return `${String(Math.floor(minutosTotais / 60)).padStart(2, '0')}:${String(Math.round(minutosTotais % 60)).padStart(2, '0')}`;
+function formatarMinutos(min) {
+  if (isNaN(min) || min <= 0) return "—";
+  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(Math.round(min%60)).padStart(2,'0')}`;
 }
 
-function calcularDiferencaIntervalo(inicio, fim) {
+function calcularDiff(inicio, fim) {
   if (!inicio || !fim) return 0;
-  let minInicio = converterParaMinutos(inicio);
-  let minFim = converterParaMinutos(fim);
-  if (minFim < minInicio) minFim += 1440; 
-  return minFim - minInicio;
+  let a = converterParaMinutos(inicio), b = converterParaMinutos(fim);
+  if (b < a) b += 1440;
+  return b - a;
 }
 
+// ─── Inicialização ────────────────────────────────────────────────────────────
 async function carregarConfigNetlify() {
+  // Tenta carregar config do Firebase via função Netlify
   try {
     const r = await fetch("/.netlify/functions/config");
-    if (!r.ok) return false;
+    if (!r.ok) throw new Error("no config");
     const cfg = await r.json();
     if (cfg.apiKey) {
       firebase.initializeApp(cfg);
       auth = firebase.auth();
-      db = firebase.firestore();
+      db   = firebase.firestore();
+      useSheets = false;
+      document.getElementById("backend-label").textContent = "Firebase Firestore";
       return true;
     }
   } catch(e) {}
+
+  // Fallback: usa Google Sheets via função sheets
+  try {
+    const r = await fetch("/.netlify/functions/sheets?acao=ler");
+    if (r.ok) {
+      useSheets = true;
+      document.getElementById("backend-label").textContent = "Google Sheets (Netlify)";
+      return "sheets";
+    }
+  } catch(e) {}
+
   return false;
 }
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById("login-email").value.trim();
-  const pass = document.getElementById("login-pass").value;
+  const pass  = document.getElementById("login-pass").value;
   const errEl = document.getElementById("auth-error");
   errEl.style.display = "none";
+
+  if (useSheets) {
+    // Login simples via função sheets (valida APP_PASSWORD no servidor)
+    try {
+      const r = await fetch("/.netlify/functions/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao: "login", email, senha: pass })
+      });
+      if (r.ok) {
+        mostrarApp(email);
+      } else {
+        errEl.textContent = "Dados inválidos.";
+        errEl.style.display = "block";
+      }
+    } catch(e) {
+      errEl.textContent = "Erro de conexão.";
+      errEl.style.display = "block";
+    }
+    return;
+  }
+
+  // Login Firebase
   try {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
@@ -416,42 +764,59 @@ async function doLogin() {
   }
 }
 
-function doLogout() { auth.signOut(); }
-
-function gerenciarPermissoes(email) {
-  // Se o e-mail não possuir supervisor ou admin, remove e esconde as abas diretamente do código rodando
-  if (email.includes("supervisor") || email.includes("admin")) {
-    document.getElementById("tab-btn-upload").classList.remove("section-hidden");
-    document.getElementById("tab-btn-edicao").classList.remove("section-hidden");
-    document.getElementById("tab-btn-config").classList.remove("section-hidden");
-    switchTab("upload");
+function doLogout() {
+  if (auth) {
+    auth.signOut();
   } else {
-    document.getElementById("tab-btn-upload").remove();
-    document.getElementById("tab-btn-edicao").remove();
-    document.getElementById("tab-btn-config").remove();
-    switchTab("historico");
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
   }
 }
 
-function switchTab(name) {
-  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
-  const tabBtn = document.getElementById(`tab-btn-${name}`);
-  if (tabBtn) tabBtn.classList.add("active");
+function mostrarApp(email) {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app").style.display        = "flex";
+  document.getElementById("user-email-display").textContent = email;
+  gerenciarPermissoes(email);
+}
+
+// ─── Permissões ───────────────────────────────────────────────────────────────
+function gerenciarPermissoes(email) {
+  const isSupervisor = email.includes("supervisor") || email.includes("admin");
+  if (isSupervisor) {
+    document.getElementById("tab-btn-upload").classList.remove("section-hidden");
+    document.getElementById("tab-btn-edicao").classList.remove("section-hidden");
+    document.getElementById("tab-btn-config").classList.remove("section-hidden");
+    switchTab("upload", document.getElementById("tab-btn-upload"));
+  } else {
+    ["upload","edicao","config"].forEach(id => {
+      const el = document.getElementById("tab-btn-" + id);
+      if (el) el.remove();
+    });
+    switchTab("historico", document.getElementById("tab-btn-historico"));
+  }
+}
+
+// ─── Navegação ────────────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("active"));
+  if (el) el.classList.add("active");
   ["upload","edicao","historico","config"].forEach(t => {
-    const el = document.getElementById("tab-" + t);
-    if(el) el.classList.toggle("section-hidden", t !== name);
+    const panel = document.getElementById("tab-" + t);
+    if (panel) panel.classList.toggle("section-hidden", t !== name);
   });
-  if (name === "edicao") { carregarFiltrosEdicao(); carregarRegistros(); }
+  if (name === "edicao")   { carregarFiltrosEdicao(); carregarRegistros(); }
   if (name === "historico") { carregarPainelHistorico(); }
 }
 
+// ─── Upload de arquivo ────────────────────────────────────────────────────────
 function handleFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    const wb = XLSX.read(ev.target.result, {type:"array", cellDates:true});
+    const wb = XLSX.read(ev.target.result, { type:"array", cellDates:true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    processarDados(XLSX.utils.sheet_to_json(ws, {defval:""}));
+    processarDados(XLSX.utils.sheet_to_json(ws, { defval:"" }));
   };
   reader.readAsArrayBuffer(file);
 }
@@ -464,17 +829,18 @@ function processarDados(rows) {
 
   dadosDoDia = filtrados.map(r => {
     const inicio = extrairHora(r["Início de Turno"] || r["Inicio de Turno"]);
-    const fim = extrairHora(r["Intervalo"] || r["Fim de Intervalo"]);
+    const fim    = extrairHora(r["Intervalo"]        || r["Fim de Intervalo"]);
     return {
-      prefixo: String(r["Prefixo"] || "").trim(),
-      dataRef: extrairData(r["Início de Turno"] || r["Inicio de Turno"]),
-      inicioTurno: inicio,
+      prefixo:      String(r["Prefixo"] || "").trim(),
+      dataRef:      extrairData(r["Início de Turno"] || r["Inicio de Turno"]),
+      inicioTurno:  inicio,
       fimIntervalo: fim,
-      tempoMinutos: calcularDiferencaIntervalo(inicio, fim),
-      motivo: ""
+      tempoMinutos: calcularDiff(inicio, fim),
+      motivo:       ""
     };
   });
-  renderizarTabela();
+
+  renderizarTabelaUpload();
   document.getElementById("upload-results").style.display = "block";
 }
 
@@ -487,64 +853,130 @@ function extrairData(val) {
 function extrairHora(val) {
   if (!val) return "";
   const m = String(val).trim().match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
-  return m ? m[1] : "";
+  return m ? m[1].slice(0,5) : "";
 }
 
-function renderizarTabela() {
+function renderizarTabelaUpload() {
   document.getElementById("turnos-tbody").innerHTML = dadosDoDia.map(r => `
     <tr>
-      <td><strong>${r.prefixo}</strong></td>
+      <td><span class="prefixo-tag">${r.prefixo}</span></td>
       <td>${r.dataRef}</td>
       <td>${r.inicioTurno || "—"}</td>
       <td>${r.fimIntervalo || "—"}</td>
-      <td><span class="badge badge-success">${formatarMinutosParaHHMM(r.tempoMinutos)}</span></td>
+      <td><span class="badge badge-green">${formatarMinutos(r.tempoMinutos)}</span></td>
     </tr>
   `).join("");
 }
 
-async function salvarNoFirebase() {
-  if (!db || !dadosDoDia.length) return;
+// ─── Salvar na base (Firebase ou Sheets) ─────────────────────────────────────
+async function salvarNaBase() {
+  if (!dadosDoDia.length) return;
   const btn = document.getElementById("btn-save-firebase");
   btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando…';
+
   try {
-    const batch = db.batch();
-    for (const r of dadosDoDia) {
-      const ref = db.collection("turnos").doc(`${r.dataRef}_${r.prefixo}`);
-      batch.set(ref, { ...r, salvoEm: firebase.firestore.FieldValue.serverTimestamp() });
+    if (useSheets) {
+      await salvarNoSheets(dadosDoDia);
+    } else {
+      await salvarNoFirebase(dadosDoDia);
     }
-    await batch.commit();
-    toast("Salvo com sucesso!", "success");
-  } catch(e) { toast("Erro ao salvar.", "error"); }
+    toast("Salvo com sucesso!");
+  } catch(e) {
+    toast("Erro ao salvar.", "error");
+  }
+
   btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-cloud-upload"></i> Salvar na nuvem';
 }
 
+async function salvarNoFirebase(dados) {
+  const batch = db.batch();
+  for (const r of dados) {
+    const ref = db.collection("turnos").doc(`${r.dataRef}_${r.prefixo}`);
+    batch.set(ref, { ...r, salvoEm: firebase.firestore.FieldValue.serverTimestamp() });
+  }
+  await batch.commit();
+}
+
+async function salvarNoSheets(dados) {
+  const res = await fetch("/.netlify/functions/sheets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ acao: "salvar", dados })
+  });
+  if (!res.ok) throw new Error("Sheets save failed");
+}
+
+// ─── Aba Edição ───────────────────────────────────────────────────────────────
 async function carregarFiltrosEdicao() {
-  const snap = await db.collection("turnos").get();
-  const todos = snap.docs.map(d => d.data());
-  preencherSelect("filter-data", [...new Set(todos.map(r => r.dataRef))].sort().reverse());
+  let todos = [];
+  if (useSheets) {
+    todos = await lerDoSheets();
+  } else {
+    const snap = await db.collection("turnos").get();
+    todos = snap.docs.map(d => d.data());
+  }
+  preencherSelect("filter-data",    [...new Set(todos.map(r => r.dataRef))].sort().reverse());
   preencherSelect("filter-prefixo", [...new Set(todos.map(r => r.prefixo))].sort());
 }
 
 async function carregarRegistros() {
   const fData = document.getElementById("filter-data").value;
   const fPref = document.getElementById("filter-prefixo").value;
-  let query = db.collection("turnos");
-  if (fData) query = query.where("dataRef", "==", fData);
-  if (fPref) query = query.where("prefixo", "==", fPref);
-  const snap = await query.get();
-  document.getElementById("edicao-tbody").innerHTML = snap.docs.map(doc => {
-    const r = doc.data();
-    return `<tr><td>${r.dataRef}</td><td>${r.prefixo}</td><td>${r.inicioTurno}</td><td>${r.fimIntervalo}</td><td>${formatarMinutosParaHHMM(r.tempoMinutos)}</td><td>${r.motivo || "—"}</td><td><button class="btn btn-edit" onclick="abrirModal('${doc.id}')">✏️ Editar</button></td></tr>`;
-  }).join("");
+  let registros = [];
+
+  if (useSheets) {
+    const todos = await lerDoSheets();
+    registros = todos.filter(r =>
+      (!fData || r.dataRef === fData) &&
+      (!fPref || r.prefixo === fPref)
+    ).map((r, i) => ({ ...r, _index: i }));
+  } else {
+    let query = db.collection("turnos");
+    if (fData) query = query.where("dataRef", "==", fData);
+    if (fPref) query = query.where("prefixo", "==", fPref);
+    const snap = await query.get();
+    registros = snap.docs.map(doc => ({ ...doc.data(), _id: doc.id }));
+  }
+
+  document.getElementById("edicao-tbody").innerHTML = registros.length
+    ? registros.map(r => `
+        <tr>
+          <td>${r.dataRef}</td>
+          <td><span class="prefixo-tag">${r.prefixo}</span></td>
+          <td>${r.inicioTurno}</td>
+          <td>${r.fimIntervalo}</td>
+          <td><span class="badge badge-green">${formatarMinutos(r.tempoMinutos)}</span></td>
+          <td style="font-size:12px;color:var(--color-text-secondary)">${r.motivo || '<span style="color:var(--color-text-tertiary)">—</span>'}</td>
+          <td>
+            <button class="btn-edit" onclick="abrirModal('${r._id || ""}', ${r._index ?? -1})">
+              <i class="ti ti-pencil"></i> Editar
+            </button>
+          </td>
+        </tr>`)
+      .join("")
+    : `<tr><td colspan="7" class="empty-state">Nenhum registro encontrado.</td></tr>`;
 }
 
-function abrirModal(id) {
-  currentEditId = id;
-  db.collection("turnos").doc(id).get().then(doc => {
-    const r = doc.data();
-    document.getElementById("edit-inicio-turno").value = r.inicioTurno;
-    document.getElementById("edit-fim-intervalo").value = r.fimIntervalo;
-    document.getElementById("edit-motivo").value = r.motivo || "";
+async function lerDoSheets() {
+  const res = await fetch("/.netlify/functions/sheets?acao=ler");
+  return res.ok ? res.json() : [];
+}
+
+// ─── Modal de edição ──────────────────────────────────────────────────────────
+function abrirModal(id, index) {
+  currentEditId    = id;
+  currentEditIndex = index;
+
+  const buscar = id
+    ? db.collection("turnos").doc(id).get().then(doc => doc.data())
+    : lerDoSheets().then(rows => rows[index]);
+
+  buscar.then(r => {
+    document.getElementById("edit-inicio-turno").value  = r.inicioTurno  || "";
+    document.getElementById("edit-fim-intervalo").value = r.fimIntervalo || "";
+    document.getElementById("edit-motivo").value        = r.motivo       || "";
     document.getElementById("edit-modal").classList.add("open");
   });
 }
@@ -552,51 +984,120 @@ function abrirModal(id) {
 function fecharModal() { document.getElementById("edit-modal").classList.remove("open"); }
 
 async function salvarEdicao() {
-  const i = document.getElementById("edit-inicio-turno").value;
-  const f = document.getElementById("edit-fim-intervalo").value;
-  await db.collection("turnos").doc(currentEditId).update({
-    inicioTurno: i, fimIntervalo: f, tempoMinutos: calcularDiferencaIntervalo(i, f), motivo: document.getElementById("edit-motivo").value
-  });
-  fecharModal(); carregarRegistros(); toast("Modificado com sucesso!", "success");
+  const i  = document.getElementById("edit-inicio-turno").value;
+  const f  = document.getElementById("edit-fim-intervalo").value;
+  const m  = document.getElementById("edit-motivo").value;
+  const tm = calcularDiff(i, f);
+
+  try {
+    if (useSheets) {
+      await fetch("/.netlify/functions/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "editar",
+          linhaIndex: currentEditIndex,
+          itemAlterado: { inicioTurno: i, fimIntervalo: f, tempoMinutos: tm, motivo: m }
+        })
+      });
+    } else {
+      await db.collection("turnos").doc(currentEditId).update({
+        inicioTurno: i, fimIntervalo: f, tempoMinutos: tm, motivo: m
+      });
+    }
+    fecharModal();
+    carregarRegistros();
+    toast("Modificado com sucesso!");
+  } catch(e) {
+    toast("Erro ao salvar.", "error");
+  }
 }
 
+// ─── Painel Histórico ─────────────────────────────────────────────────────────
 async function carregarPainelHistorico() {
-  const snap = await db.collection("turnos").get();
-  const todos = snap.docs.map(d => d.data());
+  let todos = [];
+  if (useSheets) {
+    todos = await lerDoSheets();
+  } else {
+    const snap = await db.collection("turnos").get();
+    todos = snap.docs.map(d => d.data());
+  }
+
+  // Métricas globais
+  const validos = todos.filter(r => r.tempoMinutos > 0);
+  const totalTurnos = validos.length;
+  const mediaGeral  = totalTurnos ? validos.reduce((a,r) => a + Number(r.tempoMinutos), 0) / totalTurnos : 0;
+  const datas       = [...new Set(todos.map(r => r.dataRef))].sort();
+  const periodo     = datas.length
+    ? (datas[0] === datas[datas.length-1] ? datas[0] : `${datas[0].slice(5)} – ${datas[datas.length-1].slice(5)}`)
+    : "—";
+
+  document.getElementById("stat-total").textContent   = totalTurnos;
+  document.getElementById("stat-media").textContent   = formatarMinutos(mediaGeral);
+  document.getElementById("stat-periodo").textContent = periodo;
+
+  // Por equipe
   const metr = {};
   PREFIXOS_ALVO.forEach(p => metr[p] = { soma: 0, qtd: 0 });
-  todos.forEach(r => {
-    if (r.tempoMinutos > 0 && metr[r.prefixo]) { metr[r.prefixo].soma += r.tempoMinutos; metr[r.prefixo].qtd++; }
+  validos.forEach(r => {
+    if (metr[r.prefixo]) { metr[r.prefixo].soma += Number(r.tempoMinutos); metr[r.prefixo].qtd++; }
   });
-  document.getElementById("hierarquia-tbody").innerHTML = PREFIXOS_ALVO.map(p => {
+
+  document.getElementById("historico-equipes").innerHTML = PREFIXOS_ALVO.map(p => {
     const d = metr[p];
-    return `<tr><td><strong>${p}</strong></td><td>${HIERARQUIA_EQUIPES[p]}</td><td>${d.qtd}</td><td><span class="badge badge-success">${formatarMinutosParaHHMM(d.qtd > 0 ? d.soma / d.qtd : 0)}</span></td></tr>`;
+    const media = d.qtd > 0 ? d.soma / d.qtd : 0;
+    const tc = TEAM_COLORS[p] || { dot:"dot-a", badge:"badge-green" };
+    return `
+      <div class="team-row">
+        <div class="team-dot ${tc.dot}">${p.slice(-2)}</div>
+        <div class="team-name">
+          <strong>${HIERARQUIA_EQUIPES[p]}</strong>
+          <span>${d.qtd} turno${d.qtd !== 1 ? 's' : ''} registrado${d.qtd !== 1 ? 's' : ''}</span>
+        </div>
+        <span class="badge ${tc.badge}">${formatarMinutos(media)}</span>
+      </div>`;
   }).join("");
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function preencherSelect(id, lista) {
-  document.getElementById(id).innerHTML = '<option value="">Todos</option>' + lista.map(v => `<option value="${v}">${v}</option>`).join("");
+  document.getElementById(id).innerHTML =
+    '<option value="">Todos</option>' +
+    lista.map(v => `<option value="${v}">${v}</option>`).join("");
 }
 
-function toast(msg, type) {
-  const t = document.getElementById("toast"); t.textContent = msg; t.className = `show ${type}`;
+function toast(msg, tipo) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = `show${tipo === "error" ? " error" : ""}`;
   setTimeout(() => t.className = "", 3000);
 }
 
+// ─── Boot ────────────────────────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {
-  if (await carregarConfigNetlify()) {
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById("auth-screen").style.display = "none";
-        document.getElementById("app").style.display = "flex";
-        document.getElementById("user-email-display").textContent = user.email;
-        gerenciarPermissoes(user.email);
-      } else {
-        document.getElementById("auth-screen").style.display = "flex";
-        document.getElementById("app").style.display = "none";
-      }
-    });
+  const cfg = await carregarConfigNetlify();
+
+  if (!cfg) {
+    // Sem backend disponível — exibe auth screen e tenta Firebase direto
+    document.getElementById("auth-screen").style.display = "flex";
+    return;
   }
+
+  if (cfg === "sheets") {
+    // Google Sheets: mostra tela de login (senha simples via sheets function)
+    document.getElementById("auth-screen").style.display = "flex";
+    return;
+  }
+
+  // Firebase: monitora estado de autenticação
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      mostrarApp(user.email);
+    } else {
+      document.getElementById("auth-screen").style.display = "flex";
+      document.getElementById("app").style.display         = "none";
+    }
+  });
 });
 </script>
 </body>
