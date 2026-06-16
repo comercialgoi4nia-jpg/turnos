@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Turnos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --brand: #2E4057;
+    --brand-light: #3d5470;
+    --accent: #1D9E75;
+    --accent-light: #E1F5EE;
+    --danger: #E24B4A;
+    --danger-light: #FCEBEB;
+    --warning: #EF9F27;
+    --warning-light: #FAEEDA;
+    --success: #639922;
+    --success-light: #EAF3DE;
+    --gray-50: #F8F9FA;
+    --gray-100: #F1EFE8;
+    --gray-200: #D3D1C7;
+    --gray-400: #888780;
+    --gray-600: #5F5E5A;
+    --gray-800: #444441;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    background: #f0f2f5;
+    color: #2c2c2a;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--brand);
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .auth-logo-icon {
+    width: 40px; height: 40px;
+    background: var(--brand);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 18px;
+  }
+
+  .auth-logo h1 { font-size: 18px; font-weight: 600; color: var(--brand); }
+  .auth-logo span { font-size: 12px; color: var(--gray-400); display: block; }
+
+  .auth-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+
+  .auth-card input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    outline: none;
+  }
+
+  #auth-error {
+    background: var(--danger-light);
+    color: var(--danger);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+
+  #app { display: none; flex-direction: column; height: 100vh; }
+
+  .topbar {
+    background: var(--brand);
+    color: white;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-left .logo-icon {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .topbar-left h1 { font-size: 15px; font-weight: 500; }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge { font-size: 12px; opacity: 0.75; }
+  .btn-logout {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .nav-tabs {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+
+  .nav-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+  .nav-tab.section-hidden { display: none !important; }
+
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+
+  .panel {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 12px; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .metric-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--gray-400); text-transform: uppercase; }
+  .metric-value { font-size: 24px; font-weight: 600; color: var(--brand); }
+
+  .upload-zone {
+    border: 2px dashed var(--gray-200);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--gray-50);
+    margin-bottom: 16px;
+  }
+
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: var(--brand); color: white; padding: 10px 14px; text-align: left; font-weight: 500; }
+  tbody tr { border-bottom: 1px solid var(--gray-100); }
+  tbody td { padding: 9px 14px; color: var(--gray-800); }
+  
+  .badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-success { background: var(--success-light); color: #3B6D11; }
+
+  .actions-bar { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; }
+  .btn-save { background: var(--brand); color: white; }
+  .btn-edit { background: white; color: var(--brand); border-color: var(--gray-200); padding: 5px 10px; font-size: 12px; }
+
+  .filters { display: flex; gap: 10px; margin-bottom: 14px; }
+  .filters select { padding: 7px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); background: white; }
+
+  #toast {
+    position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; color: white; background: var(--brand); opacity: 0; transition: opacity 0.25s; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { background: var(--success); }
+  #toast.error { background: var(--danger); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 12px; padding: 20px 24px; width: 100%; max-width: 480px; }
+  .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; font-weight: 500; }
+  .form-group input { padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); }
+
+  .section-hidden { display: none !important; }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🔧</div>
+      <div><h1>Controle de Turnos</h1><span>Painel do Usuário</span></div>
+    </div>
+    <label for="login-email">E-mail</label>
+    <input type="email" id="login-email" placeholder="usuario@empresa.com">
+    <label for="login-pass">Senha</label>
+    <input type="password" id="login-pass" placeholder="••••••••">
+    <div id="auth-error"></div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left"><div class="logo-icon">🔧</div><h1>Controle de Turnos</h1></div>
+    <div class="topbar-right"><span class="user-badge" id="user-email-display"></span><button class="btn-logout" onclick="doLogout()">Sair</button></div>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab" id="tab-btn-upload" data-tab="upload" onclick="switchTab('upload')">📋 <span>Turnos do Dia</span></div>
+    <div class="nav-tab" id="tab-btn-edicao" data-tab="edicao" onclick="switchTab('edicao')">✏️ <span>Editar Registros</span></div>
+    <div class="nav-tab" id="tab-btn-historico" data-tab="historico" onclick="switchTab('historico')">📈 <span>Histórico e Equipes</span></div>
+    <div class="nav-tab" id="tab-btn-config" data-tab="config" onclick="switchTab('config')">⚙️ <span>Configurações</span></div>
+  </div>
+
+  <div class="content">
+    <div id="tab-upload" class="section-hidden">
+      <div class="panel">
+        <div class="panel-title">📂 Importar arquivo do dia</div>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept=".xml,.xlsx,.xls" onchange="handleFile(this.files[0])">
+          <div>📁 <strong>Clique ou arraste a planilha aqui</strong></div>
+        </div>
+      </div>
+      <div id="upload-results" style="display:none">
+        <div class="panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>Prefixo</th><th>Data</th><th>Início Turno</th><th>Fim Intervalo</th><th>Tempo Calculado</th></tr>
+              </thead>
+              <tbody id="turnos-tbody"></tbody>
+            </table>
+          </div>
+          <div class="actions-bar"><button class="btn btn-save" id="btn-save-firebase" onclick="salvarNoFirebase()">☁️ Salvar no Firebase</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-edicao" class="section-hidden">
+      <div class="panel">
+        <div class="filters">
+          <select id="filter-data" onchange="carregarRegistros()"><option value="">Todas as datas</option></select>
+          <select id="filter-prefixo" onchange="carregarRegistros()"><option value="">Todos os prefixos</option></select>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Data</th><th>Prefixo</th><th>Início</th><th>Fim Intervalo</th><th>Tempo Calculado</th><th>Motivo</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="edicao-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-historico" class="section-hidden">
+      <div class="panel">
+        <div class="panel-title">🏆 Relatório de Médias e Hierarquia de Equipes</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Prefixo</th><th>Nome da Equipe (Hierarquia)</th><th>Quantidade de Turnos</th><th>Média de Intervalo</th></tr>
+            </thead>
+            <tbody id="hierarquia-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-config" class="section-hidden">
+      <div class="panel"><div class="panel-title">⚙️ Sistema operando em modo seguro</div><p>Variáveis injetadas em ambiente privado via Netlify.</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="form-grid">
+      <div class="form-group"><label>Início do Turno (HH:MM:SS)</label><input type="time" id="edit-inicio-turno" step="1"></div>
+      <div class="form-group"><label>Fim do Intervalo (HH:MM:SS)</label><input type="time" id="edit-fim-intervalo" step="1"></div>
+      <div class="form-group"><label>Motivo</label><input type="text" id="edit-motivo"></div>
+    </div>
+    <div class="actions-bar" style="margin-top:15px"><button class="btn btn-save" onclick="salvarEdicao()">Salvar</button><button class="btn" onclick="fecharModal()">Cancelar</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PREFIXOS_ALVO = ["GOOC","GOOH","GOOL","GOOK"];
+const HIERARQUIA_EQUIPES = {
+  "GOOC": "Equipe Alfa - Operações Críticas",
+  "GOOH": "Equipe Beta - Suporte Corporativo",
+  "GOOL": "Equipe Gama - Logística de Turno",
+  "GOOK": "Equipe Delta - Auditoria e Qualidade"
+};
+
+let db = null, auth = null, currentEditId = null, dadosDoDia = [];
+
+function converterParaMinutos(horario) {
+  if (!horario || typeof horario !== 'string') return 0;
+  const partes = horario.split(':');
+  return (parseInt(partes[0], 10) || 0) * 60 + (parseInt(partes[1], 10) || 0);
+}
+
+function formatarMinutosParaHHMM(minutosTotais) {
+  if (isNaN(minutosTotais) || minutosTotais <= 0) return "—";
+  return `${String(Math.floor(minutosTotais / 60)).padStart(2, '0')}:${String(Math.round(minutosTotais % 60)).padStart(2, '0')}`;
+}
+
+function calcularDiferencaIntervalo(inicio, fim) {
+  if (!inicio || !fim) return 0;
+  let minInicio = converterParaMinutos(inicio);
+  let minFim = converterParaMinutos(fim);
+  if (minFim < minInicio) minFim += 1440; 
+  return minFim - minInicio;
+}
+
+async function carregarConfigNetlify() {
+  try {
+    const r = await fetch("/.netlify/functions/config");
+    if (!r.ok) return false;
+    const cfg = await r.json();
+    if (cfg.apiKey) {
+      firebase.initializeApp(cfg);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  const errEl = document.getElementById("auth-error");
+  errEl.style.display = "none";
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    errEl.textContent = "Dados inválidos.";
+    errEl.style.display = "block";
+  }
+}
+
+function doLogout() { auth.signOut(); }
+
+function gerenciarPermissoes(email) {
+  // Se o e-mail não possuir supervisor ou admin, remove e esconde as abas diretamente do código rodando
+  if (email.includes("supervisor") || email.includes("admin")) {
+    document.getElementById("tab-btn-upload").classList.remove("section-hidden");
+    document.getElementById("tab-btn-edicao").classList.remove("section-hidden");
+    document.getElementById("tab-btn-config").classList.remove("section-hidden");
+    switchTab("upload");
+  } else {
+    document.getElementById("tab-btn-upload").remove();
+    document.getElementById("tab-btn-edicao").remove();
+    document.getElementById("tab-btn-config").remove();
+    switchTab("historico");
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+  const tabBtn = document.getElementById(`tab-btn-${name}`);
+  if (tabBtn) tabBtn.classList.add("active");
+  ["upload","edicao","historico","config"].forEach(t => {
+    const el = document.getElementById("tab-" + t);
+    if(el) el.classList.toggle("section-hidden", t !== name);
+  });
+  if (name === "edicao") { carregarFiltrosEdicao(); carregarRegistros(); }
+  if (name === "historico") { carregarPainelHistorico(); }
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const wb = XLSX.read(ev.target.result, {type:"array", cellDates:true});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    processarDados(XLSX.utils.sheet_to_json(ws, {defval:""}));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processarDados(rows) {
+  const filtrados = rows.filter(r => {
+    const p = String(r["Prefixo"] || "").trim();
+    return PREFIXOS_ALVO.some(pref => p.startsWith(pref));
+  });
+
+  dadosDoDia = filtrados.map(r => {
+    const inicio = extrairHora(r["Início de Turno"] || r["Inicio de Turno"]);
+    const fim = extrairHora(r["Intervalo"] || r["Fim de Intervalo"]);
+    return {
+      prefixo: String(r["Prefixo"] || "").trim(),
+      dataRef: extrairData(r["Início de Turno"] || r["Inicio de Turno"]),
+      inicioTurno: inicio,
+      fimIntervalo: fim,
+      tempoMinutos: calcularDiferencaIntervalo(inicio, fim),
+      motivo: ""
+    };
+  });
+  renderizarTabela();
+  document.getElementById("upload-results").style.display = "block";
+}
+
+function extrairData(val) {
+  if (!val) return new Date().toISOString().slice(0,10);
+  const m = String(val).trim().match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[0] : new Date().toISOString().slice(0,10);
+}
+
+function extrairHora(val) {
+  if (!val) return "";
+  const m = String(val).trim().match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+  return m ? m[1] : "";
+}
+
+function renderizarTabela() {
+  document.getElementById("turnos-tbody").innerHTML = dadosDoDia.map(r => `
+    <tr>
+      <td><strong>${r.prefixo}</strong></td>
+      <td>${r.dataRef}</td>
+      <td>${r.inicioTurno || "—"}</td>
+      <td>${r.fimIntervalo || "—"}</td>
+      <td><span class="badge badge-success">${formatarMinutosParaHHMM(r.tempoMinutos)}</span></td>
+    </tr>
+  `).join("");
+}
+
+async function salvarNoFirebase() {
+  if (!db || !dadosDoDia.length) return;
+  const btn = document.getElementById("btn-save-firebase");
+  btn.disabled = true;
+  try {
+    const batch = db.batch();
+    for (const r of dadosDoDia) {
+      const ref = db.collection("turnos").doc(`${r.dataRef}_${r.prefixo}`);
+      batch.set(ref, { ...r, salvoEm: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    await batch.commit();
+    toast("Salvo com sucesso!", "success");
+  } catch(e) { toast("Erro ao salvar.", "error"); }
+  btn.disabled = false;
+}
+
+async function carregarFiltrosEdicao() {
+  const snap = await db.collection("turnos").get();
+  const todos = snap.docs.map(d => d.data());
+  preencherSelect("filter-data", [...new Set(todos.map(r => r.dataRef))].sort().reverse());
+  preencherSelect("filter-prefixo", [...new Set(todos.map(r => r.prefixo))].sort());
+}
+
+async function carregarRegistros() {
+  const fData = document.getElementById("filter-data").value;
+  const fPref = document.getElementById("filter-prefixo").value;
+  let query = db.collection("turnos");
+  if (fData) query = query.where("dataRef", "==", fData);
+  if (fPref) query = query.where("prefixo", "==", fPref);
+  const snap = await query.get();
+  document.getElementById("edicao-tbody").innerHTML = snap.docs.map(doc => {
+    const r = doc.data();
+    return `<tr><td>${r.dataRef}</td><td>${r.prefixo}</td><td>${r.inicioTurno}</td><td>${r.fimIntervalo}</td><td>${formatarMinutosParaHHMM(r.tempoMinutos)}</td><td>${r.motivo || "—"}</td><td><button class="btn btn-edit" onclick="abrirModal('${doc.id}')">✏️ Editar</button></td></tr>`;
+  }).join("");
+}
+
+function abrirModal(id) {
+  currentEditId = id;
+  db.collection("turnos").doc(id).get().then(doc => {
+    const r = doc.data();
+    document.getElementById("edit-inicio-turno").value = r.inicioTurno;
+    document.getElementById("edit-fim-intervalo").value = r.fimIntervalo;
+    document.getElementById("edit-motivo").value = r.motivo || "";
+    document.getElementById("edit-modal").classList.add("open");
+  });
+}
+
+function fecharModal() { document.getElementById("edit-modal").classList.remove("open"); }
+
+async function salvarEdicao() {
+  const i = document.getElementById("edit-inicio-turno").value;
+  const f = document.getElementById("edit-fim-intervalo").value;
+  await db.collection("turnos").doc(currentEditId).update({
+    inicioTurno: i, fimIntervalo: f, tempoMinutos: calcularDiferencaIntervalo(i, f), motivo: document.getElementById("edit-motivo").value
+  });
+  fecharModal(); carregarRegistros(); toast("Modificado com sucesso!", "success");
+}
+
+async function carregarPainelHistorico() {
+  const snap = await db.collection("turnos").get();
+  const todos = snap.docs.map(d => d.data());
+  const metr = {};
+  PREFIXOS_ALVO.forEach(p => metr[p] = { soma: 0, qtd: 0 });
+  todos.forEach(r => {
+    if (r.tempoMinutos > 0 && metr[r.prefixo]) { metr[r.prefixo].soma += r.tempoMinutos; metr[r.prefixo].qtd++; }
+  });
+  document.getElementById("hierarquia-tbody").innerHTML = PREFIXOS_ALVO.map(p => {
+    const d = metr[p];
+    return `<tr><td><strong>${p}</strong></td><td>${HIERARQUIA_EQUIPES[p]}</td><td>${d.qtd}</td><td><span class="badge badge-success">${formatarMinutosParaHHMM(d.qtd > 0 ? d.soma / d.qtd : 0)}</span></td></tr>`;
+  }).join("");
+}
+
+function preencherSelect(id, lista) {
+  document.getElementById(id).innerHTML = '<option value="">Todos</option>' + lista.map(v => `<option value="${v}">${v}</option>`).join("");
+}
+
+function toast(msg, type) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(() => t.className = "", 3000);
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  if (await carregarConfigNetlify()) {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById("auth-screen").style.display = "none";
+        document.getElementById("app").style.display = "flex";
+        document.getElementById("user-email-display").textContent = user.email;
+        gerenciarPermissoes(user.email);
+      } else {
+        document.getElementById("auth-screen").style.display = "flex";
+        document.getElementById("app").style.display = "none";
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
